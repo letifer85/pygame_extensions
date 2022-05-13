@@ -53,8 +53,11 @@ class Animation(pygame.Surface):
         if not surfaces:
             raise ValueError('`Animation.surfaces` is ether None or an empty Sequence')
 
-        surfaces = [pygame.transform.scale(
-            surface, pygame.Vector2(size) * scale) for surface in surfaces]
+        surfaces = [
+            pygame.transform.scale(
+                surface, pygame.Vector2(size) * scale
+            ) for surface in surfaces
+        ]
 
         super().__init__(surfaces[0].get_size())
 
@@ -73,9 +76,10 @@ class Animation(pygame.Surface):
         ):
             self.surfaces = list(reversed(self.surfaces))
             self.reversed = True
-        self.reversed = False
-
-        self.blit(self.surfaces[self.index], Animation.ORIGIN_POINT)
+        else:
+            self.reversed = False
+        self.current_image = self.surfaces[self.index]
+        self.blit(self.current_image, Animation.ORIGIN_POINT)
 
     @classmethod
     def from_folder_path(
@@ -102,10 +106,14 @@ class Animation(pygame.Surface):
         size = size or pygame.Vector2(surfaces[0].get_size())
         return cls(surfaces, size, scale, animation_time, tag, callback, loop_type)
 
+    @property
+    def size(self) -> pygame.Vector2:
+        return pygame.Vector2(self.current_image.get_size())
+
     def flip_image(self) -> None:
         match self.loop_type:
             case AnimationLoopType.FORWARD | AnimationLoopType.BACKWARD:
-                self.index += +1
+                self.index += 1
             case AnimationLoopType.REPEATING | AnimationLoopType.REPEATING_BACKWARD:
                 self.index = (self.index + 1) % self.surfaces_count
             case AnimationLoopType.ISOLATING:
@@ -118,7 +126,8 @@ class Animation(pygame.Surface):
 
         if self.playing:
             self.fill((0, 0, 0, 0))
-            self.blit(self.surfaces[self.index], Animation.ORIGIN_POINT)
+            self.current_image = self.surfaces[self.index]
+            self.blit(self.current_image, Animation.ORIGIN_POINT)
 
     def play(self):
         self.playing = True
@@ -149,31 +158,3 @@ class Animation(pygame.Surface):
         if self.time_since_flip >= self.flip_interval:
             self.time_since_flip -= self.flip_interval
             self.flip_image()
-
-
-if __name__ == '__main__':
-    pygame.init()
-
-    size = width, height = 500, 500
-    screen = pygame.display.set_mode(size)
-    explosion = Animation.from_folder_path(
-        'test_assets/PNG/Nuclear_explosion',
-        animation_time=1000,
-        loop_type=AnimationLoopType.ISOLATING,
-        tag='Explosion',
-        callback=lambda x: print(f'{x} has stopped'),
-        size=pygame.Vector2(500, 500)
-    )
-    explosion.play()
-    explosion_rect = explosion.get_rect(center=(250, 250))
-    clock = pygame.time.Clock()
-    running = True
-    while running:
-        delta_time = clock.tick(60)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        explosion.update(delta_time)
-        screen.fill('black')
-        screen.blit(explosion, explosion_rect)
-        pygame.display.flip()
