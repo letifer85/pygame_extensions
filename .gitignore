@@ -1,0 +1,10 @@
+venv/
+test_assets/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+.tox/
+
+**/__pycache__
+**/.coverage
+**/*.egg-info
